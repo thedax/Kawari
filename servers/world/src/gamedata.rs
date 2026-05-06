@@ -28,6 +28,7 @@ use icarus::GimmickRect::{GimmickRectRow, GimmickRectSheet};
 use icarus::HalloweenNpcSelect::HalloweenNpcSelectSheet;
 use icarus::HousingAethernet::HousingAethernetSheet;
 use icarus::HousingLandSet::{HousingLandSetSheet, LandSetElement};
+use icarus::IKDRoute::IKDRouteSheet;
 use icarus::InstanceContent::InstanceContentSheet;
 use icarus::Item::ItemSheet;
 use icarus::ItemAction::ItemActionSheet;
@@ -1561,6 +1562,27 @@ impl GameData {
         let row = self.action_sheet.row(id).unwrap();
         row.ActionCombo
     }
+
+    /// Returns the ContentFinderCondition for a given IKDRoute.
+    pub fn lookup_ikd_route_content(&mut self, id: u32) -> u32 {
+        let config = get_config();
+        let sheet = IKDRouteSheet::read_from(&mut self.resource, config.world.language()).unwrap();
+        let row = sheet.row(id).unwrap();
+
+        row.Instance
+    }
+
+    /// Returns the IKDRoute's spots for a given ContentFinderCondition id.
+    pub fn lookup_ikd_route_spots_via_content(&mut self, id: u32) -> Option<[u32; 3]> {
+        let config = get_config();
+        let sheet = IKDRouteSheet::read_from(&mut self.resource, config.world.language()).unwrap();
+
+        sheet
+            .into_iter()
+            .flatten_subrows()
+            .find(|x| x.1.Instance == id)
+            .map(|x| x.1.Spot)
+    }
 }
 
 impl mlua::UserData for GameData {
@@ -1583,6 +1605,9 @@ impl mlua::UserData for GameData {
                 Ok(this.get_fate_default_talk(fate_shop_id, rank))
             },
         );
+        methods.add_method_mut("lookup_ikd_route_content", |_, this, id: u32| {
+            Ok(this.lookup_ikd_route_content(id))
+        });
     }
 }
 

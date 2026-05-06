@@ -165,6 +165,40 @@ impl ZoneConnection {
             self.send_ipc_self(ipc).await;
         }
 
+        let mut game_festival_ids = config.world.active_festivals.map(FestivalId);
+        let mut game_festival_phases = [0; 8];
+
+        // Set up ocean fishing
+        {
+            let mut gamedata = self.gamedata.lock();
+            if let Some(spots) =
+                gamedata.lookup_ikd_route_spots_via_content(content_finder_condition_id as u32)
+            {
+                // Special festivals used for ocean fishing.
+                game_festival_ids = [
+                    FestivalId(101),
+                    FestivalId(102),
+                    FestivalId::default(),
+                    FestivalId::default(),
+                    FestivalId::default(),
+                    FestivalId::default(),
+                    FestivalId::default(),
+                    FestivalId::default(),
+                ];
+
+                game_festival_phases = [
+                    spots[0] as u16 + 1, // IKDSpot + 1
+                    23,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                ];
+            }
+        }
+
         // Init Zone
         {
             let mut flags = if initial_login {
@@ -186,7 +220,8 @@ impl ZoneConnection {
                 weather_id: weather_id as u8,
                 flags,
                 content_finder_condition_id,
-                game_festival_ids: config.world.active_festivals.map(FestivalId),
+                game_festival_ids,
+                game_festival_phases,
                 ui_festival_ids: config.world.active_festivals.map(FestivalId),
                 ..Default::default()
             }));
